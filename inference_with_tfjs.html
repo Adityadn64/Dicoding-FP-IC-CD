@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TFJS Model Inference - Dicoding FP IC</title>
+  <!-- Bootstrap CSS (tema Darkly) -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/darkly/bootstrap.min.css">
+  <!-- AOS CSS untuk animasi -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+  
+  <style>
+   /* Background Video */
+   #background-video {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      z-index: -1;
+      object-fit: cover;
+      filter: opacity(0.25);
+    }
+    
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+
+    #dropZone {
+      border: 2px dashed #444;
+      border-radius: 5px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+      background-color: #1f1f1f;
+      cursor: pointer;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    #dropZone.hover {
+      border-color: #fff;
+      background-color: #333;
+    }
+    #preview {
+      width: 100%;
+      max-height: 300px;
+      margin-top: 20px;
+      border: 2px solid #444;
+      border-radius: 5px;
+      object-fit: contain;
+    }
+    footer {
+      margin-top: 40px;
+      padding: 20px;
+      text-align: center;
+      background-color: #1f1f1f;
+      color: #888;
+    }
+    /* Sembunyikan input file */
+    #imageUpload {
+      display: none;
+    }
+    .example-img {
+      width: 100px;
+      cursor: pointer;
+      margin: 5px;
+      border-radius: 5px;
+      transition: transform 0.3s;
+    }
+    .example-img:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Video -->
+  <video autoplay muted loop playsinline id="background-video">
+    <source src="https://raw.githubusercontent.com/Adityadn64/Dicoding-FP-IC-CD/main/assets/background.webm" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="container" data-aos="fade-up">
+    <div class="text-center my-4">
+      <h1>TFJS Model Inference</h1>
+      <p class="lead">Model ini memprediksi gambar berdasarkan kategori berikut:</p>
+      <div class="card bg-dark text-light mx-auto" style="max-width: 400px;">
+        <div class="card-body">
+          <pre class="mb-0"><code>Fresh Apples (0)
+Fresh Banana (1)
+Rotten Apples (2)
+Rotten Banana (3)</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-secondary mb-4">
+      <div class="card-body">
+        <p class="card-text">Drag & drop gambar di sini, atau klik untuk mengunggah</p>
+        <div id="dropZone">Drop gambar di sini atau klik untuk mengunggah</div>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button id="predictBtn" class="btn btn-primary mt-3 btn-block">Predict</button>
+      </div>
+    </div>
+
+    <!-- Example Images -->
+    <div class="card bg-dark mb-4 text-center">
+      <div class="card-body">
+        <h6 class="card-title mb-3">Example Images</h6>
+        <div id="exampleImages" class="d-flex flex-wrap justify-content-center"></div>
+      </div>
+    </div>
+
+    <div class="card bg-dark mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Hasil Prediksi</h4>
+        <pre id="result" class="card-text"></pre>
+        <img id="preview" src="" alt="Preview Gambar" style="display: none;">
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 Aditya Dwi Nugraha - All Rights Reserved.
+  </footer>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <!-- AOS JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+  <script>
+    AOS.init();
+
+    const include_label = ["Fresh Apples", "Fresh Banana", "Rotten Apples", "Rotten Banana"];
+    let model;
+
+    tf.loadGraphModel('https://raw.githubusercontent.com/Adityadn64/Dicoding-FP-IC-CD/main/tfjs_model/model.json')
+      .then(m => {
+        model = m;
+        console.log("Model TFJS berhasil dimuat.");
+      })
+      .catch(err => alert("Error loading model: " + err));
+
+    let droppedFile = null;
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('imageUpload');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        droppedFile = fileInput.files[0];
+        dropZone.innerText = "File dipilih: " + droppedFile.name;
+        const preview = document.getElementById('preview');
+        preview.src = URL.createObjectURL(droppedFile);
+        preview.style.display = "block";
+      }
+    });
+
+    async function prediction(img) {
+      let result = document.getElementById("result")
+      result.innerText = "";
+
+      let tensor = tf.browser.fromPixels(img, 4)
+        .resizeNearestNeighbor([100, 100])
+        .toFloat()
+        .div(tf.scalar(255))
+        .expandDims();
+      
+      const prediction = await model.predict(tensor).data();
+      const predictedIndex = prediction.indexOf(Math.max(...prediction));
+      const confidence = (Math.max(...prediction) * 100).toFixed(2);
+
+      result.innerText = 
+        `Prediksi kelas: ${include_label[predictedIndex] || "Tidak diketahui"}\nConfidence: ${confidence}%`;
+    }
+
+    document.getElementById("predictBtn").addEventListener('click', () => {
+      if (!droppedFile) {
+        alert("Silakan unggah gambar terlebih dahulu.");
+        return;
+      }
+
+      let img = new Image();
+      img.src = URL.createObjectURL(droppedFile);
+      img.onload = async () => {
+        await prediction(img);
+      };
+    });
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      const exampleContainer = document.getElementById("exampleImages");
+      for (let i = 1; i <= 8; i++) {
+        const img = document.createElement("img");
+        img.src = `https://raw.githubusercontent.com/Adityadn64/Dicoding-FP-IC-CD/main/assets/example/images (${i}).jpeg`;
+        img.alt = `Example ${i}`;
+        img.classList.add("example-img");
+        img.addEventListener("click", async function () {
+          const preview = document.getElementById('preview');
+          preview.src = img.src;
+          preview.style.display = "block";
+
+          let image = new Image();
+          image.crossOrigin = "anonymous";
+          image.src = img.src
+          image.onload = async () => {
+            await prediction(image);
+          };
+        });
+        exampleContainer.appendChild(img);
+      }
+    });
+  </script>
+</body>
+</html>
