@@ -22,13 +22,20 @@ print(f"🚀 Ngrok tunnel berjalan di: {public_url}")
 MODEL_PATH = "saved_model"
 if not os.path.exists(MODEL_PATH): raise ValueError(f"❌ Model tidak ditemukan di path: {MODEL_PATH}")
 
-model = tf.keras.models.load_model(MODEL_PATH)
+model = tf.saved_model.load(MODEL_PATH)
 print("✅ Model berhasil dimuat!")
 
 @app.route("/")
 def home(): return f"Model API berjalan di {public_url}" # render_template('inference_with_tfjs.html')
 
 @app.route("/predict", methods=["POST"])
+def preprocess_image(image_path):
+    image = Image.open(image_path).convert("RGBA")
+    image = image.resize((100, 100))
+    image_array = np.array(image) / 255.0
+    image_array = np.expand_dims(image_array, axis=0)
+    return tf.convert_to_tensor(image_array, dtype=tf.float32)
+
 def predict():
     if "file" not in request.files: return jsonify({"error": "Tidak ada file yang diunggah"}), 400
 
