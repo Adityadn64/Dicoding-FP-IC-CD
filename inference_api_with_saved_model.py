@@ -5,7 +5,10 @@ import numpy as np
 from PIL import Image
 import os
 
-app = Flask(__name__)
+template_path = os.path.abspath("./")  # Menggunakan root folder
+print(f"📁 Template path: {template_path}")  # Debugging
+
+app = Flask(__name__, template_folder=template_path)
 
 # Autentikasi ngrok
 NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
@@ -22,7 +25,7 @@ print(f"🚀 Ngrok tunnel berjalan di: {public_url}")
 MODEL_PATH = "saved_model"
 if not os.path.exists(MODEL_PATH): raise ValueError(f"❌ Model tidak ditemukan di path: {MODEL_PATH}")
 
-model = tf.saved_model.load(MODEL_PATH)
+saved_model = tf.saved_model.load(MODEL_PATH)
 print("✅ Model berhasil dimuat!")
 
 @app.route("/")
