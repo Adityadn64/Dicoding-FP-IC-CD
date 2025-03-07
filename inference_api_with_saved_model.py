@@ -6,34 +6,37 @@ from PIL import Image
 import os
 
 template_path = os.path.abspath("./")  # Menggunakan root folder
-print(f"📁 Template path: {template_path}")  # Debugging
+print(f"Template path: {template_path}")  # Debugging
 
 app = Flask(__name__, template_folder=template_path)
 
 # Autentikasi ngrok
 NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
-if not NGROK_AUTH_TOKEN: NGROK_AUTH_TOKEN = "279KH6O4fFzLrl8C36VTxyns37S_cbJVurv4f6ysYVNNDPdA"
-    # raise ValueError("NGROK_AUTH_TOKEN is not set. Please provide a valid ngrok token.")
+if not NGROK_AUTH_TOKEN:
+    NGROK_AUTH_TOKEN = "279KH6O4fFzLrl8C36VTxyns37S_cbJVurv4f6ysYVNNDPdA"
+    print("NGROK_AUTH_TOKEN is not set. Please provide a valid ngrok token.")
 
 ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 
-# Jalankan ngrok secara manual
+# Jalankan Ngrok
 public_url = ngrok.connect(5000).public_url
 print(f"🚀 Ngrok tunnel berjalan di: {public_url}")
 
-# Load Model
+# Pastikan Model Ada
 MODEL_PATH = "saved_model"
-if not os.path.exists(MODEL_PATH): raise ValueError(f"❌ Model tidak ditemukan di path: {MODEL_PATH}")
+if not os.path.exists(MODEL_PATH): raise ValueError(f"Model tidak ditemukan di path: {MODEL_PATH}")
 
-saved_model = tf.saved_model.load(MODEL_PATH)
-print("✅ Model berhasil dimuat!")
+try:
+    saved_model = tf.saved_model.load(MODEL_PATH)
+    print("Model berhasil dimuat!")
+except Exception as e:  raise ValueError(f"Gagal memuat model: {e}")
 
-def preprocess_image(image_path):
-    image = Image.open(image_path).convert("RGBA")
-    image = image.resize((100, 100))
-    image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
-    return tf.convert_to_tensor(image_array, dtype=tf.float32)
+include_label = [
+    "Fresh Apples"
+    "Fresh Banana"
+    "Rotten Apples"
+    "Rotten Banana"
+]
 
 @app.route("/")
 def home(): return render_template('inference_with_tfjs.html')
@@ -46,10 +49,12 @@ def predict():
     image_path = "temp.jpg"
     image_file.save(image_path)
 
-    # Preproses gambar
-    image_data = preprocess_image(image_path)
+    image = Image.open(image_path).convert("RGB")
+    image = image.resize((100, 100))
+    image_array = np.array(image) / 255.0
+    image_array = np.expand_dims(image_array, axis=0)
+    image_data = tf.convert_to_tensor(image_array, dtype=tf.float32)
 
-    # Prediksi
     predictions = saved_model(image_data)
     output_tensor = predictions['output_0'] if isinstance(predictions, dict) else predictions
     output_array = output_tensor.numpy()
@@ -57,16 +62,22 @@ def predict():
     predicted_index = int(np.argmax(output_array[0]))
     confidence = float(np.max(output_array[0]) * 100)
 
-    is_label = predicted_index <= len(include_label)
+    is_label = predicted_index < len(include_label)
     label = include_label[predicted_index] if is_label else f"Label Index: {predicted_index}"
 
-    return jsonify({
+    data = {
         "predicted_label": label,
         "confidence": confidence,
         "is_label": is_label
-    })
+    }
 
+    print(data)
+
+    return jsonify(data)
+
+# Handler Error 500 Dengan Detail
 @app.errorhandler(500)
 def handle_500_error(e): return jsonify({"error": "Terjadi kesalahan di server", "message": str(e)}), 500
 
-if __name__ == "__main__": app.run()
+# Jalankan Server dengan Debug Mode
+if __name__ == "__main__": app.run(debug=True)
