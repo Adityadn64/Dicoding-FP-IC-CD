@@ -1,0 +1,2 @@
+agent:
+	authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
