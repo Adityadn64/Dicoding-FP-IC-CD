@@ -31,6 +31,7 @@ if not os.path.exists(MODEL_PATH): raise ValueError(f"Model tidak ditemukan di p
 
 try:
     saved_model = tf.saved_model.load(MODEL_PATH)
+    infer = saved_model.signatures["serving_default"]
     print("Model berhasil dimuat!")
 except Exception as e:  raise ValueError(f"Gagal memuat model: {e}")
 
@@ -48,17 +49,8 @@ def home(): return render_template('inference_with_tfjs.html')
 def predict():
     if "file" not in request.files: return jsonify({"error": "Tidak ada file yang diunggah"}), 400
 
-    image_file = request.files["file"]
-    image_path = "temp.jpg"
-    image_file.save(image_path)
-
-    image = Image.open(image_path).convert("RGB")
-    image = image.resize((100, 100))
-    image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
-    image_data = tf.convert_to_tensor(image_array, dtype=tf.float32)
-
-    predictions = saved_model(image_data)
+    image_data = request.files["file"]
+    predictions = infer(tf.constant(image_data))
     output_tensor = predictions['output_0'] if isinstance(predictions, dict) else predictions
     output_array = output_tensor.numpy()
     
