@@ -26,7 +26,7 @@ model = tf.saved_model.load(MODEL_PATH)
 print("✅ Model berhasil dimuat!")
 
 @app.route("/")
-def home(): return f"Model API berjalan di {public_url}" # render_template('inference_with_tfjs.html')
+def home(): render_template('inference_with_tfjs.html')
 
 @app.route("/predict", methods=["POST"])
 def preprocess_image(image_path):
