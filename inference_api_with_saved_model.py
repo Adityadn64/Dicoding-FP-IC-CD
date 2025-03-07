@@ -4,7 +4,9 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
-import io
+
+# Matikan GPU untuk menghindari error CUDA
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 app = Flask(__name__)
 
@@ -12,58 +14,65 @@ app = Flask(__name__)
 MODEL_PATH = "saved_model"
 
 # Periksa apakah folder model ada
-if not os.path.exists(MODEL_PATH): raise ValueError(f"❌ Model tidak ditemukan di path: {MODEL_PATH}")
+if not os.path.exists(MODEL_PATH):
+    raise ValueError(f"❌ Model tidak ditemukan di path: {MODEL_PATH}")
 
-# Load model menggunakan `tf.saved_model.load()`
+# Load model menggunakan tf.saved_model.load()
 model = tf.saved_model.load(MODEL_PATH)
 infer = model.signatures["serving_default"]
+
 print("✅ Model berhasil dimuat!")
 
-# Load label dari file
+# Load Label
 label_file_path = "tflite/label.txt"
-if not os.path.exists(label_file_path): raise ValueError("❌ Label file tidak ditemukan!")
+if os.path.exists(label_file_path):
+    with open(label_file_path, "r") as f:
+        include_label = f.read().splitlines()
+else:
+    include_label = ["Class-0", "Class-1", "Class-2", "Class-3"]
 
-with open(label_file_path, "r") as f: include_label = f.read().splitlines()
-
-# Fungsi Preprocessing Gambar
-def preprocess_image(image):
+def preprocess_image(image_path):
     """Preprocessing gambar untuk input model."""
-    image = Image.open(image).convert("RGB")  # Konversi ke RGB
-    image = image.resize((224, 224))  # Resize ke ukuran model
-    image_array = np.array(image, dtype=np.float32) / 255.0  # Normalisasi [0,1]
+    image = Image.open(image_path).convert("RGBA")  # Konversi ke RGBA (4 channel)
+    image = image.resize((100, 100))  # Resize ke ukuran input model
+    image_array = np.array(image) / 255.0  # Normalisasi ke [0,1]
     image_array = np.expand_dims(image_array, axis=0)  # Tambah dimensi batch
-    return tf.convert_to_tensor(image_array)  # Konversi ke tensor
+    return tf.convert_to_tensor(image_array, dtype=tf.float32)
 
 @app.route('/')
-def home(): return render_template('inference_with_tfjs.html')
+def home():
+    return render_template('inference_with_tfjs.html')
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Periksa apakah ada file yang dikirim
-        if "file" not in request.files: return jsonify({"error": "Tidak ada file yang diunggah"}), 400
-        
+        # Periksa apakah ada file gambar yang diupload
+        if "file" not in request.files:
+            return jsonify({"error": "Tidak ada file yang diunggah"}), 400
+
         # Ambil file gambar dari request
         image_file = request.files["file"]
-        image = preprocess_image(image_file)
+        image_path = "temp.jpg"
+        image_file.save(image_path)
+
+        # Preproses gambar
+        image_data = preprocess_image(image_path)
 
         # Lakukan prediksi dengan model
-        predictions = infer(image)
-
-        # Ambil output tensor sebagai numpy array
-        output_array = predictions["output_0"].numpy()
+        predictions = infer(tf.constant(image_data))["output_0"].numpy()
 
         # Ambil kelas dengan confidence tertinggi
-        predicted_index = int(np.argmax(output_array[0]))
-        confidence = float(np.max(output_array[0]) * 100)
+        predicted_index = int(np.argmax(predictions[0]))
+        confidence = float(np.max(predictions[0]) * 100)
 
         return jsonify({
             "prediction": include_label[predicted_index],
             "confidence": confidence
         })
 
-    except Exception as e: return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    run_with_ngrok(app)
-    app.run(debug=True)
+    run_with_ngrok(app)  # Pastikan hanya ini yang dipanggil!
+    app.run()  # Hapus debug=True
