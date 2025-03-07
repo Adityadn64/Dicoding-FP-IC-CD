@@ -1,9 +1,12 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 from flask import Flask, request, jsonify, render_template
 from pyngrok import ngrok
-import tensorflow as tf
 import numpy as np
 from PIL import Image
-import os
+import tensorflow as tf
 
 template_path = os.path.abspath("./")  # Menggunakan root folder
 print(f"Template path: {template_path}")  # Debugging
