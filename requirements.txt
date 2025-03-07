@@ -1,7 +1,7 @@
 ﻿opencv-python
 requests
 pandas
-numpy==1.20.0
+numpy==1.21.0
 pillow
 matplotlib
 keras
