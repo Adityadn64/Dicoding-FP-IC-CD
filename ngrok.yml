@@ -1,2 +1,5 @@
-agent:
-	authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
+version: 2
+tunnels:
+  default:
+    proto: http
+    addr: 5000
