@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -23,6 +23,9 @@ def preprocess_image(image_path):
     image_array = np.array(image) / 255.0  # Normalisasi ke [0,1]
     image_array = np.expand_dims(image_array, axis=0)  # Tambah dimensi batch
     return image_array
+
+@app.route('/')
+def home(): return render_template('inference_with_tfjs.html')
 
 @app.route("/predict", methods=["POST"])
 def predict():
