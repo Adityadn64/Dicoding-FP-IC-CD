@@ -1,5 +1,0 @@
-version: 2
-tunnels:
-  default:
-    proto: http
-    addr: 5000

@@ -190,28 +190,26 @@ Rotten Banana (3)</code></pre>
       };
     });
 
-    document.addEventListener("DOMContentLoaded", async function () {
-      const exampleContainer = document.getElementById("exampleImages");
-      for (let i = 1; i <= 8; i++) {
-        const img = document.createElement("img");
-        img.src = `https://raw.githubusercontent.com/Adityadn64/Dicoding-FP-IC-CD/main/assets/example/images (${i}).jpeg`;
-        img.alt = `Example ${i}`;
-        img.classList.add("example-img");
-        img.addEventListener("click", async function () {
-          const preview = document.getElementById('preview');
-          preview.src = img.src;
-          preview.style.display = "block";
+    const exampleContainer = document.getElementById("exampleImages");
+    for (let i = 1; i <= 8; i++) {
+      const img = document.createElement("img");
+      img.src = `https://raw.githubusercontent.com/Adityadn64/Dicoding-FP-IC-CD/main/assets/example/images (${i}).jpeg`;
+      img.alt = `Example ${i}`;
+      img.classList.add("example-img");
+      img.addEventListener("click", async function () {
+        const preview = document.getElementById('preview');
+        preview.src = img.src;
+        preview.style.display = "block";
 
-          let image = new Image();
-          image.crossOrigin = "anonymous";
-          image.src = img.src
-          image.onload = async () => {
-            await prediction(image);
-          };
-        });
-        exampleContainer.appendChild(img);
-      }
-    });
+        let image = new Image();
+        image.crossOrigin = "anonymous";
+        image.src = img.src
+        image.onload = async () => {
+          await prediction(image);
+        };
+      });
+      exampleContainer.appendChild(img);
+    }
   </script>
 </body>
 </html>
