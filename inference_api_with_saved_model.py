@@ -9,6 +9,9 @@ app = Flask(__name__)
 
 # Autentikasi ngrok
 NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
+if not NGROK_AUTH_TOKEN: NGROK_AUTH_TOKEN = "279KH6O4fFzLrl8C36VTxyns37S_cbJVurv4f6ysYVNNDPdA"
+    # raise ValueError("NGROK_AUTH_TOKEN is not set. Please provide a valid ngrok token.")
+
 ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 
 # Jalankan ngrok secara manual
