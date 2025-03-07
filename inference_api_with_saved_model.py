@@ -83,4 +83,4 @@ def predict():
 def handle_500_error(e): return jsonify({"error": "Terjadi kesalahan di server", "message": str(e)}), 500
 
 # Jalankan Server dengan Debug Mode
-if __name__ == "__main__": app.run(debug=True)
+if __name__ == "__main__": app.run()
