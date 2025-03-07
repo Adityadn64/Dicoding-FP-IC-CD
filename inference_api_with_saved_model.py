@@ -47,15 +47,18 @@ def predict():
     image_data = preprocess_image(image_path)
 
     # Prediksi
-    predictions = model.predict(image_data)
-    predicted_index = int(np.argmax(predictions[0]))
-    confidence = float(np.max(predictions[0]) * 100)
+    predictions = saved_model(image_data)
+    output_tensor = predictions['output_0'] if isinstance(predictions, dict) else predictions
+    output_array = output_tensor.numpy()
+    
+    predicted_index = int(np.argmax(output_array[0]))
+    confidence = float(np.max(output_array[0]) * 100)
 
     is_label = predicted_index <= len(include_label)
     label = include_label[predicted_index] if is_label else f"Label Index: {predicted_index}"
 
     return jsonify({
-        "label": label,
+        "predicted_label": label,
         "confidence": confidence,
         "is_label": is_label
     })
