@@ -1,6 +1,6 @@
 import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from flask import Flask, request, jsonify, render_template
 from pyngrok import ngrok
@@ -35,9 +35,9 @@ try:
 except Exception as e:  raise ValueError(f"Gagal memuat model: {e}")
 
 include_label = [
-    "Fresh Apples"
-    "Fresh Banana"
-    "Rotten Apples"
+    "Fresh Apples",
+    "Fresh Banana",
+    "Rotten Apples",
     "Rotten Banana"
 ]
 
